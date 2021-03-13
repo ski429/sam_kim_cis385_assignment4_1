@@ -1,5 +1,5 @@
 from flask import Flask, make_response
-from flask_restful import Resource, Api, reqparse
+from flask_restful import Resource, Api, reqparse, fields, marshal_with
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -19,8 +19,15 @@ notes_put_args = reqparse.RequestParser()
 notes_put_args.add_argument("title", type=str, help="title of note")
 notes_put_args.add_argument("body", type=str, help="body of note")
 
+resource_fields = {
+    'id': fields.Integer,
+    'title': fields.String,
+    'body': fields.String
+}
+
 
 class Note(Resource):
+    @marshal_with(resource_fields)
     def get(self, note_id):
         result = NoteModel.query.get(id=note_id)
         return result
