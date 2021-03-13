@@ -1,19 +1,20 @@
-from flask import Flask, make_response
-from flask_restful import Resource, Api, reqparse, fields, marshal_with
+from flask import Flask
+from flask_restful import Resource, Api, reqparse, fields, marshal_with, abort
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 api = Api(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 db = SQLAlchemy(app)
-db.create_all()
 
 
 class NoteModel(db.Model):
-    id = db.Column(db.Integer, priamry_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(20), nullable=False)
     body = db.Column(db.String(100), nullable=False)
 
+
+db.create_all()
 
 notes_put_args = reqparse.RequestParser()
 notes_put_args.add_argument("title", type=str, help="title of note")
@@ -29,56 +30,40 @@ resource_fields = {
 class Note(Resource):
     @marshal_with(resource_fields)
     def get(self, note_id):
-        result = NoteModel.query.get(id=note_id)
+        result = NoteModel.query.filter_by(id=note_id).first()
+        if not result:
+            abort(404, message="No note with that note_id.")
         return result
 
+    @marshal_with(resource_fields)
     def put(self, note_id):
-        temp = get_note("id", note_id)
-        if temp is None:
-            return make_response('Note {:d} not found.'.format(note_id), 404)
         args = notes_put_args.parse_args()
-        print(args.items())
-        for k, v in args.items():
-            temp[k] = v
-        return make_response(temp, 200)
+        result = NoteModel.query.filter_by(id=note_id).first()
+        if result:
+            abort(409, message="Note id taken.")
+        note = NoteModel(id=note_id, title=args['title'], body=args['body'])
+        db.session.add(note)
+        db.session.commit()
+        return note, 201
 
     def delete(self, note_id):
-        temp = get_note("id", note_id)
-        if temp is None:
-            return make_response('Note {:d} not found.'.format(note_id), 404)
-        notes.remove(temp)
-        return make_response('Note {:d} was deleted.'.format(note_id), 200)
+        pass
 
 
 class NoteByTitle(Resource):
     def get(self, title):
-        temp = get_note("title", title)
-        if temp is None:
-            return make_response("Note not found.", 404)
-        return make_response(temp, 200)
+        pass
 
     def put(self, title):
-        temp = get_note("title", title)
-        if temp is None:
-            return make_response("Note not found.", 404)
-        args = notes_put_args.parse_args()
-        temp["body"] = args["body"]
-        return make_response(temp, 200)
+        pass
 
     def post(self, title):
-        if get_note("title", title) is not None:
-            return make_response("Note already exists", 409)
-        args = notes_put_args.parse_args()
-        next_id = notes[-1]["id"] + 1
-        args["id"] = next_id
-        args["title"] = title
-        notes.append(args)
-        return make_response('New note with id: {:d} created.'.format(next_id), 200)
+        pass
 
 
 class AllNotes(Resource):
     def get(self):
-        return notes
+        pass
 
 
 api.add_resource(Note, '/notes/<int:note_id>')
