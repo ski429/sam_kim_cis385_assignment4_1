@@ -39,8 +39,8 @@ class Note(Resource):
     def put(self, note_id):
         args = notes_put_args.parse_args()
         result = NoteModel.query.filter_by(id=note_id).first()
-        if result:
-            abort(409, message="Note id taken.")
+        if not result:
+            abort(404, message="No note with that note_id.")
         note = NoteModel(id=note_id, title=args['title'], body=args['body'])
         db.session.add(note)
         db.session.commit()
