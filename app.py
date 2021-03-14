@@ -76,8 +76,10 @@ class NoteByTitle(Resource):
 
 
 class AllNotes(Resource):
+    @marshal_with(resource_fields)
     def get(self):
-        pass
+        query = NoteModel.query.all()
+        return query
 
 
 api.add_resource(Note, '/notes/<int:note_id>')
