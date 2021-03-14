@@ -32,7 +32,7 @@ class Note(Resource):
     def get(self, note_id):
         result = NoteModel.query.filter_by(id=note_id).first()
         if not result:
-            abort(404, message="No note with that note_id.")
+            abort(404, message="That note does not exist.")
         return result
 
     @marshal_with(resource_fields)
@@ -40,14 +40,20 @@ class Note(Resource):
         args = notes_put_args.parse_args()
         result = NoteModel.query.filter_by(id=note_id).first()
         if not result:
-            abort(404, message="No note with that note_id.")
+            abort(404, message="That note does not exist.")
         note = NoteModel(id=note_id, title=args['title'], body=args['body'])
         db.session.add(note)
         db.session.commit()
         return note, 201
 
+    @marshal_with(resource_fields)
     def delete(self, note_id):
-        pass
+        result = NoteModel.query.filter_by(id=note_id).first()
+        if not result:
+            abort(404, message="That note does not exist.")
+        db.session.delete(result)
+        db.session.commit()
+        return 'Note {} deleted'.format(note_id), 200
 
 
 class NoteByTitle(Resource):
