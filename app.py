@@ -57,14 +57,22 @@ class Note(Resource):
 
 
 class NoteByTitle(Resource):
-    def get(self, title):
+    def get(self, note_title):
         pass
 
-    def put(self, title):
+    def patch(self, note_title):
         pass
 
-    def post(self, title):
-        pass
+    @marshal_with(resource_fields)
+    def post(self, note_title):
+        args = notes_put_args.parse_args()
+        result = NoteModel.query.filter_by(title=note_title).first()
+        if result:
+            abort(404, message="A note with the same title exists")
+        note = NoteModel(title=note_title, body=args['body'])
+        db.session.add(note)
+        db.session.commit()
+        return note, 200
 
 
 class AllNotes(Resource):
@@ -73,7 +81,7 @@ class AllNotes(Resource):
 
 
 api.add_resource(Note, '/notes/<int:note_id>')
-api.add_resource(NoteByTitle, '/notes/<string:title>')
+api.add_resource(NoteByTitle, '/notes/<string:note_title>')
 api.add_resource(AllNotes, '/notes/')
 
 if __name__ == '__main__':
