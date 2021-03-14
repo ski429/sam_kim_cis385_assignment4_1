@@ -36,7 +36,7 @@ class Note(Resource):
         return result
 
     @marshal_with(resource_fields)
-    def put(self, note_id):
+    def patch(self, note_id):
         args = notes_put_args.parse_args()
         result = NoteModel.query.filter_by(id=note_id).first()
         if not result:
