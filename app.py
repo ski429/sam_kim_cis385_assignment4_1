@@ -57,8 +57,12 @@ class Note(Resource):
 
 
 class NoteByTitle(Resource):
+    @marshal_with(resource_fields)
     def get(self, note_title):
-        pass
+        result = NoteModel.query.filter_by(title=note_title).first()
+        if not result:
+            abort(404, message="That note does not exist.")
+        return result
 
     def patch(self, note_title):
         pass
