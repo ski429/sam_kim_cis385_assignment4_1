@@ -41,10 +41,10 @@ class Note(Resource):
         result = NoteModel.query.filter_by(id=note_id).first()
         if not result:
             abort(404, message="That note does not exist.")
-        note = NoteModel(id=note_id, title=args['title'], body=args['body'])
-        db.session.add(note)
+        result.title = args['title']
+        result.body = args['body']
         db.session.commit()
-        return note, 201
+        return result, 201
 
     @marshal_with(resource_fields)
     def delete(self, note_id):
@@ -64,8 +64,15 @@ class NoteByTitle(Resource):
             abort(404, message="That note does not exist.")
         return result
 
+    @marshal_with(resource_fields)
     def patch(self, note_title):
-        pass
+        args = notes_put_args.parse_args()
+        result = NoteModel.query.filter_by(title=note_title).first()
+        if not result:
+            abort(404, message="That note does not exist.")
+        result.body = args['body']
+        db.session.commit()
+        return result, 201
 
     @marshal_with(resource_fields)
     def post(self, note_title):
