@@ -8,20 +8,20 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 db = SQLAlchemy(app)
 
 
-class NoteModel(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(20), nullable=False)
-    body = db.Column(db.String(100), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('usermodel.id'), nullable=False)
-
-
-class UserModel(db.Model):
+class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
-    notes = db.relationship('NoteModel', backref ='author', lazy=True)
-# db.create_all()
+    notes = db.relationship('Notes', backref='author', lazy=True)
+
+
+class Notes(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(20), nullable=False)
+    body = db.Column(db.String(100), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    # db.create_all()
 
 
 notes_put_args = reqparse.RequestParser()
@@ -38,7 +38,7 @@ resource_fields = {
 class Note(Resource):
     @marshal_with(resource_fields)
     def get(self, note_id):
-        result = NoteModel.query.filter_by(id=note_id).first()
+        result = Note.query.filter_by(id=note_id).first()
         if not result:
             abort(404, message="That note does not exist.")
         return result
@@ -46,7 +46,7 @@ class Note(Resource):
     @marshal_with(resource_fields)
     def patch(self, note_id):
         args = notes_put_args.parse_args()
-        result = NoteModel.query.filter_by(id=note_id).first()
+        result = Note.query.filter_by(id=note_id).first()
         if not result:
             abort(404, message="That note does not exist.")
         result.title = args['title']
@@ -56,7 +56,7 @@ class Note(Resource):
 
     @marshal_with(resource_fields)
     def delete(self, note_id):
-        result = NoteModel.query.filter_by(id=note_id).first()
+        result = Note.query.filter_by(id=note_id).first()
         if not result:
             abort(404, message="That note does not exist.")
         db.session.delete(result)
@@ -67,7 +67,7 @@ class Note(Resource):
 class NoteByTitle(Resource):
     @marshal_with(resource_fields)
     def get(self, note_title):
-        result = NoteModel.query.filter_by(title=note_title).first()
+        result = Note.query.filter_by(title=note_title).first()
         if not result:
             abort(404, message="That note does not exist.")
         return result
@@ -75,7 +75,7 @@ class NoteByTitle(Resource):
     @marshal_with(resource_fields)
     def patch(self, note_title):
         args = notes_put_args.parse_args()
-        result = NoteModel.query.filter_by(title=note_title).first()
+        result = Note.query.filter_by(title=note_title).first()
         if not result:
             abort(404, message="That note does not exist.")
         result.body = args['body']
@@ -85,10 +85,10 @@ class NoteByTitle(Resource):
     @marshal_with(resource_fields)
     def post(self, note_title):
         args = notes_put_args.parse_args()
-        result = NoteModel.query.filter_by(title=note_title).first()
+        result = Note.query.filter_by(title=note_title).first()
         if result:
             abort(404, message="A note with the same title exists")
-        note = NoteModel(title=note_title, body=args['body'])
+        note = Note(title=note_title, body=args['body'])
         db.session.add(note)
         db.session.commit()
         return note, 200
@@ -97,7 +97,7 @@ class NoteByTitle(Resource):
 class AllNotes(Resource):
     @marshal_with(resource_fields)
     def get(self):
-        query = NoteModel.query.all()
+        query = Note.query.all()
         return query
 
 
