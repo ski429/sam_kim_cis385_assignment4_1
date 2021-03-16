@@ -12,9 +12,17 @@ class NoteModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(20), nullable=False)
     body = db.Column(db.String(100), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('usermodel.id'), nullable=False)
 
 
-db.create_all()
+class UserModel(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(20), unique=True, nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(60), nullable=False)
+    notes = db.relationship('NoteModel', backref ='author', lazy=True)
+# db.create_all()
+
 
 notes_put_args = reqparse.RequestParser()
 notes_put_args.add_argument("title", type=str, help="title of note")
