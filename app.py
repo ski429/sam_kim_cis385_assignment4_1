@@ -37,6 +37,12 @@ resource_fields = {
     'body': fields.String
 }
 
+user_fields = {
+    'id': fields.Integer,
+    'username': fields.String,
+    'password': fields.String
+}
+
 
 class NoteById(Resource):
     @marshal_with(resource_fields)
@@ -125,8 +131,10 @@ class UserById(Resource):
 
 
 class AllUsers(Resource):
+    @marshal_with(user_fields)
     def get(self):
-        pass
+        query = User.query.all()
+        return query
 
 
 api.add_resource(UserById, '/user/<string:user_id>')
