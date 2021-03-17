@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_restful import Resource, Api, reqparse, fields, marshal_with, abort
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -115,7 +115,7 @@ class UserById(Resource):
     def get(self, user_id):
         user = User.query.filter_by(id=user_id).first()
         if not user:
-            abort(404, message="That note does not exist.")
+            abort(404, message="That user does not exist.")
         return user
 
     def post(self, user_id):
@@ -133,7 +133,14 @@ class UserById(Resource):
         pass
 
     def delete(self, user_id):
-        pass
+        user = User.query.filter_by(id=user_id).first()
+
+        if not user:
+            abort(404, message="That user does not exist.")
+        db.session.delete(user)
+        db.session.commit()
+
+        return make_response('User has been deleted.', 200)
 
 
 class AllUsers(Resource):
