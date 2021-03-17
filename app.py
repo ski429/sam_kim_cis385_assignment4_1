@@ -1,9 +1,11 @@
-from flask import Flask
+from flask import Flask, request, jsonify
 from flask_restful import Resource, Api, reqparse, fields, marshal_with, abort
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 api = Api(app)
+app.config['SECRET_KEY'] = 'secret'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 db = SQLAlchemy(app)
 
@@ -11,9 +13,8 @@ db = SQLAlchemy(app)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
-    notes = db.relationship('Notes', backref='author', lazy=True)
+    notes = db.relationship('Note', backref='author', lazy=True)
 
 
 class Note(db.Model):
@@ -21,7 +22,9 @@ class Note(db.Model):
     title = db.Column(db.String(20), nullable=False)
     body = db.Column(db.String(100), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    # db.create_all()
+
+
+# db.create_all()
 
 
 notes_put_args = reqparse.RequestParser()
@@ -101,6 +104,32 @@ class AllNotes(Resource):
         return query
 
 
+class UserById(Resource):
+    def get(self, user_id):
+        pass
+
+    def post(self, user_id):
+        data = request.get_json()
+
+        hashed_password = generate_password_hash(data['password'], method='sha256')
+        new_user = User(username=data['username'], password=hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({'message': 'New user created.'})
+
+    def put(self, user_id):
+        pass
+
+    def delete(self, user_id):
+        pass
+
+
+class AllUsers(Resource):
+    def get(self):
+        pass
+
+
+api.add_resource(UserById, '/user/<string:user_id>')
 api.add_resource(NoteById, '/notes/<int:note_id>')
 api.add_resource(NoteByTitle, '/notes/<string:note_title>')
 api.add_resource(AllNotes, '/notes/')
