@@ -32,13 +32,13 @@ notes_put_args.add_argument("title", type=str, help="title of note")
 notes_put_args.add_argument("body", type=str, help="body of note")
 
 resource_fields = {
-    'id': fields.Integer,
+    'id': fields.Integer(default=None),
     'title': fields.String,
     'body': fields.String
 }
 
 user_fields = {
-    'id': fields.Integer,
+    'id': fields.Integer(default=None),
     'username': fields.String,
     'password': fields.String
 }
@@ -111,12 +111,18 @@ class AllNotes(Resource):
 
 
 class UserById(Resource):
+    @marshal_with(user_fields)
     def get(self, user_id):
-        pass
+        user = User.query.filter_by(id=user_id).first()
+        if not user:
+            abort(404, message="That note does not exist.")
+        return user
 
     def post(self, user_id):
         data = request.get_json()
-
+        user = User.query.filter_by(id=user_id).first()
+        if user:
+            abort(404, message="User already exists.")
         hashed_password = generate_password_hash(data['password'], method='sha256')
         new_user = User(username=data['username'], password=hashed_password)
         db.session.add(new_user)
@@ -138,6 +144,7 @@ class AllUsers(Resource):
 
 
 api.add_resource(UserById, '/user/<string:user_id>')
+api.add_resource(AllUsers, '/users/')
 api.add_resource(NoteById, '/notes/<int:note_id>')
 api.add_resource(NoteByTitle, '/notes/<string:note_title>')
 api.add_resource(AllNotes, '/notes/')
