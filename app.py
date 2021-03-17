@@ -16,7 +16,7 @@ class User(db.Model):
     notes = db.relationship('Notes', backref='author', lazy=True)
 
 
-class Notes(db.Model):
+class Note(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(20), nullable=False)
     body = db.Column(db.String(100), nullable=False)
@@ -35,7 +35,7 @@ resource_fields = {
 }
 
 
-class Note(Resource):
+class NoteById(Resource):
     @marshal_with(resource_fields)
     def get(self, note_id):
         result = Note.query.filter_by(id=note_id).first()
@@ -101,7 +101,7 @@ class AllNotes(Resource):
         return query
 
 
-api.add_resource(Note, '/notes/<int:note_id>')
+api.add_resource(NoteById, '/notes/<int:note_id>')
 api.add_resource(NoteByTitle, '/notes/<string:note_title>')
 api.add_resource(AllNotes, '/notes/')
 
