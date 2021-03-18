@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify, make_response
 from flask_restful import Resource, Api, reqparse, fields, marshal_with, abort
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+import jwt
+import datetime
 
 app = Flask(__name__)
 api = Api(app)
@@ -148,6 +150,26 @@ class AllUsers(Resource):
     def get(self):
         query = User.query.all()
         return query
+
+
+@app.route('/login')
+def login():
+    auth = request.authorization
+
+    if not auth or not auth.username or not auth.password:
+        return make_response('Invalid login.', 401, {'WWW-Authenticate': 'Basic realm="Login required!"'})
+
+    user = User.query.filter_by(username=auth.username).first()
+
+    if not user:
+        return make_response('Invalid login.', 401, {'WWW-Authenticate': 'Basic realm="Login required!"'})
+
+    if check_password_hash(user.password, auth.password):
+        token = jwt.encode({'id': user.id, 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)},
+                           app.config['SECRET_KEY'], algorithm="HS256")
+
+        return jsonify({'token': token})
+    return make_response('Invalid login.', 401, {'WWW-Authenticate': 'Basic realm="Login required!"'})
 
 
 api.add_resource(UserById, '/user/<string:user_id>')
