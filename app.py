@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 import datetime
+from functools import wraps
 
 app = Flask(__name__)
 api = Api(app)
@@ -27,6 +28,26 @@ class Note(db.Model):
 
 
 # db.create_all()
+
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+
+        if 'x-access-token' in request.headers:
+            token = request.headers['x-access-token']
+
+        if not token:
+            return jsonify({'message': 'Token is missing!'}), 401
+
+        try:
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithm="HS256")
+            current_user = User.query.filter_by(id=data['id']).first()
+        except:
+            return jsonify({'message': 'Token is invalid!'}), 401
+
+        return f(current_user, *args, **kwargs)
+    return decorated
 
 
 notes_put_args = reqparse.RequestParser()
@@ -120,20 +141,6 @@ class UserById(Resource):
             abort(404, message="That user does not exist.")
         return user
 
-    def post(self, user_id):
-        data = request.get_json()
-        user = User.query.filter_by(id=user_id).first()
-        if user:
-            abort(404, message="User already exists.")
-        hashed_password = generate_password_hash(data['password'], method='sha256')
-        new_user = User(username=data['username'], password=hashed_password)
-        db.session.add(new_user)
-        db.session.commit()
-        return jsonify({'message': 'New user created.'})
-
-    def put(self, user_id):
-        pass
-
     def delete(self, user_id):
         user = User.query.filter_by(id=user_id).first()
 
@@ -146,10 +153,20 @@ class UserById(Resource):
 
 
 class AllUsers(Resource):
+    @token_required
     @marshal_with(user_fields)
     def get(self):
         query = User.query.all()
         return query
+
+    @token_required
+    def post(current_user, self):
+        data = request.get_json()
+        hashed_password = generate_password_hash(data['password'], method='sha256')
+        new_user = User(username=data['username'], password=hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({'message': 'New user created.', 'id': new_user.id})
 
 
 @app.route('/login')
@@ -173,7 +190,7 @@ def login():
 
 
 api.add_resource(UserById, '/user/<string:user_id>')
-api.add_resource(AllUsers, '/users/')
+api.add_resource(AllUsers, '/user/')
 api.add_resource(NoteById, '/notes/<int:note_id>')
 api.add_resource(NoteByTitle, '/notes/<string:note_title>')
 api.add_resource(AllNotes, '/notes/')
