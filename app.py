@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 import datetime
 from functools import wraps
+import traceback
 
 app = Flask(__name__)
 api = Api(app)
@@ -41,10 +42,10 @@ def token_required(f):
             return jsonify({'message': 'Token is missing!'}), 401
 
         try:
-            data = jwt.decode(token, app.config['SECRET_KEY'], algorithm="HS256")
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms="HS256")
             current_user = User.query.filter_by(id=data['id']).first()
         except:
-            return jsonify({'message': 'Token is invalid!'}), 401
+            return jsonify({'message': 'Token is invalid!'})
 
         return f(current_user, *args, **kwargs)
     return decorated
@@ -134,14 +135,16 @@ class AllNotes(Resource):
 
 
 class UserById(Resource):
+    @token_required
     @marshal_with(user_fields)
-    def get(self, user_id):
+    def get(current_user, self, user_id):
         user = User.query.filter_by(id=user_id).first()
         if not user:
             abort(404, message="That user does not exist.")
         return user
 
-    def delete(self, user_id):
+    @token_required
+    def delete(current_user, self, user_id):
         user = User.query.filter_by(id=user_id).first()
 
         if not user:
@@ -155,7 +158,7 @@ class UserById(Resource):
 class AllUsers(Resource):
     @token_required
     @marshal_with(user_fields)
-    def get(self):
+    def get(current_user, self):
         query = User.query.all()
         return query
 
@@ -189,7 +192,7 @@ def login():
     return make_response('Invalid login.', 401, {'WWW-Authenticate': 'Basic realm="Login required!"'})
 
 
-api.add_resource(UserById, '/user/<string:user_id>')
+api.add_resource(UserById, '/user/<int:user_id>')
 api.add_resource(AllUsers, '/user/')
 api.add_resource(NoteById, '/notes/<int:note_id>')
 api.add_resource(NoteByTitle, '/notes/<string:note_title>')
