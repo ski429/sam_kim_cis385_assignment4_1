@@ -71,7 +71,7 @@ class NoteById(Resource):
     @token_required
     @marshal_with(resource_fields)
     def get(current_user, self, note_id):
-        result = Note.query.filter_by(id=note_id).first()
+        result = Note.query.filter_by(id=note_id, user_id=current_user.id).first()
         if not result:
             abort(404, message="That note does not exist.")
         return result
@@ -80,7 +80,7 @@ class NoteById(Resource):
     @marshal_with(resource_fields)
     def patch(current_user, self, note_id):
         args = notes_put_args.parse_args()
-        result = Note.query.filter_by(id=note_id).first()
+        result = Note.query.filter_by(id=note_id, user_id=current_user.id).first()
         if not result:
             abort(404, message="That note does not exist.")
         result.title = args['title']
@@ -89,9 +89,8 @@ class NoteById(Resource):
         return result, 201
 
     @token_required
-    @marshal_with(resource_fields)
     def delete(current_user, self, note_id):
-        result = Note.query.filter_by(id=note_id).first()
+        result = Note.query.filter_by(id=note_id, user_id=current_user.id).first()
         if not result:
             abort(404, message="That note does not exist.")
         db.session.delete(result)
