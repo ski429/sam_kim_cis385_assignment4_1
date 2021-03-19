@@ -68,15 +68,17 @@ user_fields = {
 
 
 class NoteById(Resource):
+    @token_required
     @marshal_with(resource_fields)
-    def get(self, note_id):
+    def get(current_user, self, note_id):
         result = Note.query.filter_by(id=note_id).first()
         if not result:
             abort(404, message="That note does not exist.")
         return result
 
+    @token_required
     @marshal_with(resource_fields)
-    def patch(self, note_id):
+    def patch(current_user, self, note_id):
         args = notes_put_args.parse_args()
         result = Note.query.filter_by(id=note_id).first()
         if not result:
@@ -86,8 +88,9 @@ class NoteById(Resource):
         db.session.commit()
         return result, 201
 
+    @token_required
     @marshal_with(resource_fields)
-    def delete(self, note_id):
+    def delete(current_user, self, note_id):
         result = Note.query.filter_by(id=note_id).first()
         if not result:
             abort(404, message="That note does not exist.")
@@ -97,15 +100,17 @@ class NoteById(Resource):
 
 
 class NoteByTitle(Resource):
+    @token_required
     @marshal_with(resource_fields)
-    def get(self, note_title):
+    def get(current_user, self, note_title):
         result = Note.query.filter_by(title=note_title).first()
         if not result:
             abort(404, message="That note does not exist.")
         return result
 
+    @token_required
     @marshal_with(resource_fields)
-    def patch(self, note_title):
+    def patch(current_user, self, note_title):
         args = notes_put_args.parse_args()
         result = Note.query.filter_by(title=note_title).first()
         if not result:
@@ -114,8 +119,9 @@ class NoteByTitle(Resource):
         db.session.commit()
         return result, 201
 
+    @token_required
     @marshal_with(resource_fields)
-    def post(self, note_title):
+    def post(current_user, self, note_title):
         args = notes_put_args.parse_args()
         result = Note.query.filter_by(title=note_title).first()
         if result:
@@ -127,9 +133,10 @@ class NoteByTitle(Resource):
 
 
 class AllNotes(Resource):
+    @token_required
     @marshal_with(resource_fields)
-    def get(self):
-        query = Note.query.all()
+    def get(current_user, self):
+        query = Note.query.filter_by(user_id=current_user.id)
         return query
 
 
