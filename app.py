@@ -123,20 +123,20 @@ class NoteByTitle(Resource):
     @marshal_with(resource_fields)
     def post(current_user, self, note_title):
         args = notes_put_args.parse_args()
-        result = Note.query.filter_by(title=note_title).first()
+        result = Note.query.filter_by(title=note_title, user_id=current_user.id).first()
         if result:
             abort(404, message="A note with the same title exists")
-        note = Note(title=note_title, body=args['body'])
-        db.session.add(note)
+        new_note = Note(title=note_title, body=args['body'], user_id=current_user.id)
+        db.session.add(new_note)
         db.session.commit()
-        return note, 200
+        return new_note, 200
 
 
 class AllNotes(Resource):
     @token_required
     @marshal_with(resource_fields)
     def get(current_user, self):
-        query = Note.query.filter_by(user_id=current_user.id)
+        query = Note.query.filter_by(user_id=current_user.id).all()
         return query
 
 
