@@ -5,7 +5,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 import datetime
 from functools import wraps
-import traceback
 
 app = Flask(__name__)
 api = Api(app)
@@ -14,6 +13,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 db = SQLAlchemy(app)
 
 
+# DB Models
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
@@ -30,6 +30,7 @@ class Note(db.Model):
 
 # db.create_all()
 
+# Function decorator to enforce user authenticated calls
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -50,10 +51,12 @@ def token_required(f):
     return decorated
 
 
+# Formatting of user input
 notes_put_args = reqparse.RequestParser()
 notes_put_args.add_argument("title", type=str, help="title of note")
 notes_put_args.add_argument("body", type=str, help="body of note")
 
+# Formatting of output fields
 resource_fields = {
     'id': fields.Integer(default=None),
     'title': fields.String,
@@ -67,6 +70,7 @@ user_fields = {
 }
 
 
+# Note API resources
 class NoteById(Resource):
     @token_required
     @marshal_with(resource_fields)
@@ -139,6 +143,7 @@ class AllNotes(Resource):
         return query
 
 
+# User API resources
 class UserById(Resource):
     @token_required
     @marshal_with(user_fields)
