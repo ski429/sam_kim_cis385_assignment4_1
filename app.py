@@ -103,7 +103,7 @@ class NoteByTitle(Resource):
     @token_required
     @marshal_with(resource_fields)
     def get(current_user, self, note_title):
-        result = Note.query.filter_by(title=note_title).first()
+        result = Note.query.filter_by(title=note_title, user_id=current_user.id).first()
         if not result:
             abort(404, message="That note does not exist.")
         return result
@@ -112,7 +112,7 @@ class NoteByTitle(Resource):
     @marshal_with(resource_fields)
     def patch(current_user, self, note_title):
         args = notes_put_args.parse_args()
-        result = Note.query.filter_by(title=note_title).first()
+        result = Note.query.filter_by(title=note_title, user_id=current_user.id).first()
         if not result:
             abort(404, message="That note does not exist.")
         result.body = args['body']
