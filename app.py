@@ -34,13 +34,12 @@ def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         token = None
-
+        # Check for token in header
         if 'x-access-token' in request.headers:
             token = request.headers['x-access-token']
-
         if not token:
             return jsonify({'message': 'Token is missing!'}), 401
-
+        # Decode token, verify password, find user in database
         try:
             data = jwt.decode(token, app.config['SECRET_KEY'], algorithms="HS256")
             current_user = User.query.filter_by(id=data['id']).first()
@@ -146,12 +145,10 @@ class UserById(Resource):
     @token_required
     def delete(current_user, self, user_id):
         user = User.query.filter_by(id=user_id).first()
-
         if not user:
             abort(404, message="That user does not exist.")
         db.session.delete(user)
         db.session.commit()
-
         return make_response('User has been deleted.', 200)
 
 
@@ -162,14 +159,14 @@ class AllUsers(Resource):
         query = User.query.all()
         return query
 
-    @token_required
-    def post(current_user, self):
+    @marshal_with(user_fields)
+    def post(self):
         data = request.get_json()
         hashed_password = generate_password_hash(data['password'], method='sha256')
         new_user = User(username=data['username'], password=hashed_password)
         db.session.add(new_user)
         db.session.commit()
-        return jsonify({'message': 'New user created.', 'id': new_user.id})
+        return new_user
 
 
 @app.route('/login')
@@ -194,9 +191,9 @@ def login():
 
 api.add_resource(UserById, '/user/<int:user_id>')
 api.add_resource(AllUsers, '/user/')
-api.add_resource(NoteById, '/notes/<int:note_id>')
-api.add_resource(NoteByTitle, '/notes/<string:note_title>')
-api.add_resource(AllNotes, '/notes/')
+api.add_resource(NoteById, '/note/<int:note_id>')
+api.add_resource(NoteByTitle, '/note/<string:note_title>')
+api.add_resource(AllNotes, '/note/')
 
 if __name__ == '__main__':
     app.run(debug=True)
